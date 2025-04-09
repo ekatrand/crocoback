@@ -24,7 +24,23 @@ app.disable("x-powered-by");
 app.use(helmet()); // Secure HTTP headers
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(",") || "http://localhost:3000",
+    origin: (origin, callback) => {
+      // Get allowed origins from env and trim whitespace
+      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map((o) =>
+        o.trim()
+      ) || ["http://localhost:3000"];
+
+      // No origin (like curl requests)
+      if (!origin) return callback(null, true);
+
+      // Check if origin is allowed
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log(`Origin ${origin} not allowed by CORS`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
