@@ -7,9 +7,13 @@ import compression from "compression";
 import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import connectDB from "./config/mongodbconnection"; // Import your MongoDB connection function
 
 // Load environment variables
 dotenv.config();
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 const port = process.env.PORT || 4040;
@@ -29,7 +33,7 @@ app.use(hpp()); // Protect against HTTP Parameter Pollution
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
 
@@ -42,7 +46,21 @@ app.use(cookieParser());
 
 // Routes
 app.get("/", (req: Request, res: Response) => {
-  res.send("Hello World!");
+  const randomResponses = [
+    "Welcome to the Croco API!",
+    "Hello from the server side!",
+    "API is up and running smoothly!",
+    "Greetings, API explorer!",
+    "Crocodiles say hi!",
+    "Server is feeling good today!",
+    "Your request has been acknowledged with enthusiasm!",
+    "API at your service!",
+    "200 OK - Have a great day!",
+    "Successfully connected to the croco-verse!",
+  ];
+
+  const randomIndex = Math.floor(Math.random() * randomResponses.length);
+  res.send(randomResponses[randomIndex]);
 });
 
 // Error handling middleware
