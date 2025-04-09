@@ -5,14 +5,17 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Get MongoDB URI from environment variables
-const MONGODB_URI =
-  process.env.MONGO_DB_CROCO_URI || "mongodb://localhost:27017/crocoapp";
+const MONGODB_URI = process.env.MONGO_DB_CROCO_URI || "";
 
 // Connect to MongoDB
 const connectDB = async () => {
   try {
+    if (!MONGODB_URI) {
+      throw new Error(
+        "MONGO_DB_CROCO_URI is not defined in environment variables"
+      );
+    }
     await mongoose.connect(MONGODB_URI);
-    console.log("✅ MongoDB connected successfully");
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
     process.exit(1);
