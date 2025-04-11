@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
@@ -8,6 +8,8 @@ import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import connectDB from "./config/mongodbconnection"; // Import your MongoDB connection function
+// Import routes
+import partsRoutes from "./routes/parts";
 
 // Load environment variables
 dotenv.config();
@@ -79,8 +81,11 @@ app.get("/", (req: Request, res: Response) => {
   res.send(randomResponses[randomIndex]);
 });
 
+// API Routes
+app.use("/api/parts", partsRoutes);
+
 // Error handling middleware
-app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     status: "error",
