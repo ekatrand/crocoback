@@ -4,21 +4,148 @@ import { faker } from "@faker-js/faker";
 import { DocumentationType } from "../models/Parts";
 
 /**
- * Get all parts with pagination
+ * Get all parts with pagination and filtering
  * @route GET /api/parts
  */
 export const getAllParts = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.limit as string) || 50;
     const skip = (page - 1) * limit;
 
-    const parts = await Part.find()
-      .sort({ createdAt: -1 })
+    // Build filter object from query parameters
+    const filter: Record<string, any> = {};
+
+    // Global search parameter that searches across multiple fields
+    if (req.query.globalSearch) {
+      // Use elemMatch for array fields to ensure proper matching
+      filter.$or = [
+        { partNumber: { $regex: req.query.globalSearch, $options: "i" } },
+        { partName: { $regex: req.query.globalSearch, $options: "i" } },
+        { partDescription: { $regex: req.query.globalSearch, $options: "i" } },
+        { category: { $regex: req.query.globalSearch, $options: "i" } },
+        { subCategory: { $regex: req.query.globalSearch, $options: "i" } },
+        { supplier: { $regex: req.query.globalSearch, $options: "i" } },
+        {
+          alternativePartNumbers: {
+            $regex: req.query.globalSearch,
+            $options: "i",
+          },
+        },
+      ];
+    } else {
+      // Individual field filters (these will be ignored if globalSearch is provided)
+
+      // Filter by partNumber (exact match or partial match)
+      if (req.query.partNumber) {
+        filter.partNumber = { $regex: req.query.partNumber, $options: "i" };
+      }
+
+      // Filter by partName (partial match)
+      if (req.query.partName) {
+        filter.partName = { $regex: req.query.partName, $options: "i" };
+      }
+
+      // Filter by categories (match exactly against array)
+      if (req.query.category) {
+        try {
+          // Parse as JSON array if it's a string representation of array
+          const categories =
+            typeof req.query.category === "string" &&
+            req.query.category.startsWith("[")
+              ? JSON.parse(req.query.category as string)
+              : req.query.category;
+
+          // Handle both single category and array of categories
+          if (Array.isArray(categories)) {
+            filter.category = { $all: categories }; // Match all categories in the array
+          } else {
+            filter.category = { $in: [categories] }; // Match if array contains this category
+          }
+        } catch (err) {
+          // Fall back to simple string matching if JSON parsing fails
+          filter.category = { $in: [req.query.category] };
+        }
+      }
+
+      // Filter by subCategories
+      if (req.query.subCategory) {
+        try {
+          // Parse as JSON array if it's a string representation of array
+          const subCategories =
+            typeof req.query.subCategory === "string" &&
+            req.query.subCategory.startsWith("[")
+              ? JSON.parse(req.query.subCategory as string)
+              : req.query.subCategory;
+
+          // Handle both single subCategory and array of subCategories
+          if (Array.isArray(subCategories)) {
+            filter.subCategory = { $all: subCategories }; // Match all subCategories in the array
+          } else {
+            filter.subCategory = { $in: [subCategories] }; // Match if array contains this subCategory
+          }
+        } catch (err) {
+          // Fall back to simple string matching if JSON parsing fails
+          filter.subCategory = { $in: [req.query.subCategory] };
+        }
+      }
+
+      // Filter by suppliers
+      if (req.query.supplier) {
+        try {
+          // Parse as JSON array if it's a string representation of array
+          const suppliers =
+            typeof req.query.supplier === "string" &&
+            req.query.supplier.startsWith("[")
+              ? JSON.parse(req.query.supplier as string)
+              : req.query.supplier;
+
+          // Handle both single supplier and array of suppliers
+          if (Array.isArray(suppliers)) {
+            filter.supplier = { $all: suppliers }; // Match all suppliers in the array
+          } else {
+            filter.supplier = { $in: [suppliers] }; // Match if array contains this supplier
+          }
+        } catch (err) {
+          // Fall back to simple string matching if JSON parsing fails
+          filter.supplier = { $in: [req.query.supplier] };
+        }
+      }
+
+      // Filter by alternative part numbers (array contains)
+      if (req.query.alternativePartNumber) {
+        filter.alternativePartNumbers = {
+          $regex: req.query.alternativePartNumber,
+          $options: "i",
+        };
+      }
+
+      // Search in description
+      if (req.query.description) {
+        filter.partDescription = {
+          $regex: req.query.description,
+          $options: "i",
+        };
+      }
+    }
+
+    // Filter by date range (created between dates)
+    if (req.query.startDate && req.query.endDate) {
+      filter.createdAt = {
+        $gte: new Date(req.query.startDate as string),
+        $lte: new Date(req.query.endDate as string),
+      };
+    }
+
+    // Get total count based on filters
+    const total = await Part.countDocuments(filter);
+
+    // Apply filters and pagination to the query with a stable sort
+    // Using _id as a secondary sort ensures stable pagination even when createdAt values are identical
+    const parts = await Part.find(filter)
+      .sort({ createdAt: -1, _id: -1 })
       .skip(skip)
       .limit(limit);
-
-    const total = await Part.countDocuments();
 
     res.status(200).json({
       success: true,
@@ -29,6 +156,7 @@ export const getAllParts = async (req: Request, res: Response) => {
         totalPages: Math.ceil(total / limit),
         hasMore: skip + parts.length < total,
       },
+      filters: Object.keys(filter).length > 0 ? filter : "None",
       data: parts,
     });
   } catch (error) {
@@ -76,8 +204,25 @@ export const generateRandomParts = async (req: Request, res: Response) => {
         max: 9999,
       })}`;
       const partName = `${faker.commerce.productAdjective()} ${faker.commerce.product()} Component`;
-      const category = faker.helpers.arrayElement(categories);
-      const supplier = faker.helpers.arrayElement(suppliers);
+
+      // Generate 1-3 random categories
+      const categoriesCount = faker.number.int({ min: 1, max: 3 });
+      const randomCategories = Array.from({ length: categoriesCount }, () =>
+        faker.helpers.arrayElement(categories)
+      ).filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
+
+      // Generate 1-3 random suppliers
+      const suppliersCount = faker.number.int({ min: 1, max: 3 });
+      const randomSuppliers = Array.from({ length: suppliersCount }, () =>
+        faker.helpers.arrayElement(suppliers)
+      ).filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
+
+      // Generate random subCategories based on the categories
+      const randomSubCategories = faker.helpers.maybe(() =>
+        randomCategories.map(
+          (category) => `${category} Type ${faker.string.alpha(1)}`
+        )
+      );
 
       const randomPart = {
         partNumber,
@@ -87,11 +232,9 @@ export const generateRandomParts = async (req: Request, res: Response) => {
           `ALT-${faker.string.alphanumeric(6)}`,
         ]),
         partDescription: faker.commerce.productDescription(),
-        category,
-        subCategory: faker.helpers.maybe(
-          () => `${category} Type ${faker.string.alpha(1)}`
-        ),
-        supplier,
+        category: randomCategories,
+        subCategory: randomSubCategories,
+        supplier: randomSuppliers,
         supplierContact: faker.helpers.maybe(() => faker.internet.email()),
         internalContact: faker.helpers.maybe(() => faker.person.fullName()),
         specifications: {

@@ -30,11 +30,8 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
  * @desc    Generate 10 random parts
  * @access  Public (should be protected in production)
  */
-
-// closed for now so no one can spam the server with random parts
-
-// router.post("/generate", (req: Request, res: Response, next: NextFunction) =>
-//   generateRandomParts(req, res)
-// );
+router.post("/generate", (req: Request, res: Response, next: NextFunction) =>
+  generateRandomParts(req, res)
+);
 
 export default router;

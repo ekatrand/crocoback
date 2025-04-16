@@ -15,16 +15,16 @@ export interface IPart extends Document {
   alternativePartNumbers?: string[];
   partName: string;
   partDescription?: string;
-  category: string;
-  subCategory?: string;
-  supplier: string;
+  category: string[]; // Changed from string to string[]
+  subCategory?: string[]; // Changed from string to string[]
+  supplier: string[]; // Changed from string to string[]
   supplierContact?: string;
   internalContact?: string;
   specifications: Record<string, any>;
   documentation: IPartDocumentation[];
   createdAt?: Date;
   updatedAt?: Date;
-  childParts?: IChildPart[]; // Add this new field
+  childParts?: IChildPart[];
 }
 
 // First, update the interface
@@ -105,19 +105,19 @@ const PartSchema: Schema = new Schema(
       trim: true,
     },
     category: {
-      type: String,
+      type: [String], // Changed from String to [String]
       required: [true, "Category is required"],
       trim: true,
       index: true, // Index for category lookups
     },
 
     subCategory: {
-      type: String,
+      type: [String], // Changed from String to [String]
       required: false,
       trim: true,
     },
     supplier: {
-      type: String,
+      type: [String], // Changed from String to [String]
       required: [true, "supplier is required"],
       trim: true,
       index: true, // Index for supplier lookups

@@ -33,3 +33,6 @@ Crocoback is a backend API for a parts management system that allows tracking pa
 - PORT - Server port
 - MONGO_DB_CROCO_URI - MongoDB connection string
 - ALLOWED_ORIGINS - CORS allowed origins (comma-separated)
+
+## General  
+- Dont return code which is commented out, unless needed for your proposed solution. if commented out it done so for a reasson.
