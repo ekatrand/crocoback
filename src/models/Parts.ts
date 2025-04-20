@@ -32,6 +32,9 @@ export interface IChildPart {
   partNumber: string;
   partName: string;
   quantity: number;
+  partDescription?: string; // Added to match schema
+  supplier?: string; // Added to match schema
+  mainPartId?: mongoose.Types.ObjectId; // Reference to the main part
 }
 // Define documentation types enum
 export enum DocumentationType {
@@ -151,6 +154,20 @@ const PartSchema: Schema = new Schema(
           required: true,
           min: 1,
           default: 1,
+        },
+        partDescription: {
+          type: String,
+          required: false,
+          trim: true,
+        },
+        supplier: {
+          type: String,
+          required: false,
+          trim: true,
+        },
+        mainPartId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Part",
         },
       },
     ],
