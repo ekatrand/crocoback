@@ -62,25 +62,6 @@ app.use(express.json({ limit: "10kb" })); // Body parser with size limit
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 
-// Routes
-app.get("/", (req: Request, res: Response) => {
-  const randomResponses = [
-    "Welcome to the Croco API!",
-    "Hello from the server side!",
-    "API is up and running smoothly!",
-    "Greetings, API explorer!",
-    "Crocodiles say hi!",
-    "Server is feeling good today!",
-    "Your request has been acknowledged with enthusiasm!",
-    "API at your service!",
-    "200 OK - Have a great day!",
-    "Successfully connected to the croco-verse!",
-  ];
-
-  const randomIndex = Math.floor(Math.random() * randomResponses.length);
-  res.send(randomResponses[randomIndex]);
-});
-
 // API Routes
 app.use("/api/parts", partsRoutes);
 
