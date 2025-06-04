@@ -8,8 +8,10 @@ import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import connectDB from "./config/mongodbconnection"; // Import your MongoDB connection function
+
 // Import routes
 import partsRoutes from "./routes/parts";
+import waitlistRoutes from "./routes/waitlist";
 
 // Load environment variables
 dotenv.config();
@@ -51,7 +53,7 @@ app.use(hpp()); // Protect against HTTP Parameter Pollution
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Limit each IP to 1000 requests per windowMs
 });
 app.use(limiter);
 
@@ -62,8 +64,11 @@ app.use(express.json({ limit: "10kb" })); // Body parser with size limit
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 
+// API Routes - Direct implementation without additional middleware
+
 // API Routes
 app.use("/api/parts", partsRoutes);
+app.use("/api/waitlist", waitlistRoutes);
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
